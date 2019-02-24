@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jh.xysp.dao.ShopDao">
+	<resultMap id="shopMap" type="com.jh.xysp.entity.Shop">
+		<id column="shop_id" property="shopId" />
+		<!-- property对应实体类中的属性名 column 对应库表中的字段名 -->
+		<result column="shop_name" property="shopName" />
+		<result column="shop_desc" property="shopDesc" />
+		<result column="shop_addr" property="shopAddr" />
+		<result column="shop_phone" property="shopPhone" />
+		<result column="shop_img" property="shopImg" />
+		<result column="shop_priority" property="shopPriority" />
+		<result column="shop_create_time" property="shopCreateTime" />
+		<result column="shop_last_edit_time"
+			property="shopLastEditTime" />
+		<result column="shop_enable_status" property="shopEnableStatus" />
+		<result column="shop_advice" property="shopAdvice" />
+
+		<association property="shopowner" column="shop_owner_id"
+			javaType="com.jh.xysp.entity.PersonInfo">
+			<id column="user_id" property="userId" />
+			<result column="user_name" property="userName" />
+		</association>
+
+		<association property="shoparea" column="shop_area_id"
+			javaType="com.jh.xysp.entity.Area">
+			<id column="area_id" property="areaId" />
+			<result column="area_name" property="areaName" />
+		</association>
+
+		<association property="shopCategory"
+			column="shop_category_id" javaType="com.jh.xysp.entity.ShopCategory">
+			<id column="shop_category_id" property="shopCategoryId" />
+			<result column="shop_category_name"
+				property="shopCategoryName" />
+		</association>
+	</resultMap>
+
+	<sql id="queryShopByCondition">
+		<!-- 商铺类别 -->
+		<if
+			test="shopCondition.shopCategory !=null and shopCondition.shopCategory.shopCategoryId !=null">
+			and
+			s.shop_category_id=#{shopCondition.shopCategory.shopCategoryId}
+		</if>
+		<!-- 区域Id -->
+		<if
+			test="shopCondition.shoparea !=null and shopCondition.shoparea.areaId !=null">
+			and s.shop_area_id=#{shopCondition.shoparea.areaId}
+		</if>
+		<!-- 商铺名（要求模糊查询） -->
+		<if test="shopCondition.shopName !=null and '' != shopCondition.shopName">
+			and s.shop_name like '%{shopCondition.shopName}%'
+		</if>
+		<!-- 商铺状态 -->
+		<if test="shopCondition.shopEnableStatus !=null">
+			and s.shop_enable_status=#{shopCondition.shopEnableStatus}
+		</if>
+		<!-- owner -->
+		<if
+			test="shopCondition.shopowner !=null and shopCondition.shopowner.userId !=null">
+			and s.shop_owner_id=#{shopCondition.shopowner.userId}
+		</if>
+		<!-- 选择了某个大类，列举出该大类下面的全部商店   以parent_id来筛选  -->
+        <if test="shopCondition.shopCategory != null 
+            and shopCondition.shopCategory.shopCategoryParentId != null
+            and shopCondition.shopCategory.shopCategoryParentId.shopCategoryId != null ">
+            and s.shop_category_id in (
+                select shop_category_id 
+                    from  jh_shop_category 
+                    where shop_category_parent_id =  #{shopCondition.shopCategory.shopCategoryParentId.shopCategoryId}
+                )
+        </if>
+	</sql>
+
+	<select id="queryShopList" resultMap="shopMap">
+		select
+		s.shop_id,
+		s.shop_name,
+		s.shop_desc,
+		s.shop_addr,
+		s.shop_phone,
+		s.shop_img,
+		s.shop_priorty,
+		s.shop_create_time,
+		s.shop_last_edit_time,
+		s.shop_enable_status,
+		s.shop_advice,
+		a.area_id,
+		a.area_name,
+		sc.shop_category_id,
+		sc.shop_category_name
+		from
+		jh_shop s,jh_area
+		a,jh_shop_category sc
+		<where>
+			<include refid="queryShopByCondition" />
+		</where>
+		and
+		s.shop_area_id=a.area_id
+		and
+		s.shop_category_id=sc.shop_category_id
+		order by
+		s.shop_priorty desc
+		limit #{rowIndex},#{pageSize};
+	</select>
+	<select id="queryShopCount" resultType="Integer">
+		select
+		count(1)
+		from
+		jh_shop s,
+		jh_area a,
+		jh_shop_category sc
+		<where>
+			<include refid="queryShopByCondition" />
+		</where>
+		and
+		s.shop_area_id=a.area_id
+		and
+		s.shop_category_id=sc.shop_category_id
+	</select>
+
+
+	<select id="queryByShopId" resultMap="shopMap"
+		parameterType="Long">
+		select
+		s.shop_id,
+		s.shop_name,
+		s.shop_desc,
+		s.shop_addr,
+		s.shop_phone,
+		s.shop_img,
+		s.shop_priorty,
+		s.shop_create_time,
+		s.shop_last_edit_time,
+		s.shop_enable_status,
+		s.shop_advice,
+		a.area_id,
+		a.area_name,
+		sc.shop_category_id,
+		sc.shop_category_name
+		from
+		jh_shop
+		s,jh_area
+		a,jh_shop_category sc
+		where
+		s.shop_area_id=a.area_id
+		and
+		s.shop_category_id=sc.shop_category_id
+		and
+		s.shop_id=#{shopId}
+	</select>
+
+	<insert id="insertShop" useGeneratedKeys="true"
+		keyColumn="shop_id" keyProperty="shopId">
+		INSERT INTO
+		jh_shop(shop_owner_id,shop_area_id,shop_category_id,shop_name,shop_desc,shop_addr,shop_phone,shop_img,
+		shop_priorty,shop_create_time,shop_last_edit_time,shop_enable_status,shop_advice)
+		VALUES
+		(#{shopowner.userId},#{shoparea.areaId},#{shopCategory.shopCategoryId},#{shopName},#{shopDesc},#{shopAddr},#{shopPhone},
+		#{shopImg},#{shopPriority},#{shopCreateTime},#{shopLastEditTime},#{shopEnableStatus},#{shopAdvice})
+	</insert>
+	<update id="updateShop" parameterType="com.jh.xysp.entity.Shop">
+		update jh_shop
+		<set>
+			<if test="shopName !=null">shop_name=#{shopName},</if>
+			<if test="shopDesc !=null">shop_desc=#{shopDesc},</if>
+			<if test="shopAddr !=null">shop_addr=#{shopAddr},</if>
+			<if test="shopPhone !=null">shop_phone=#{shopPhone},</if>
+			<if test="shopImg !=null">shop_img=#{shopImg},</if>
+			<if test="shopPriority !=null">shop_priorty=#{shopPriority},</if>
+			<if test="shopLastEditTime !=null">shop_last_edit_time=#{shopLastEditTime},</if>
+			<if test="shopEnableStatus !=null">shop_enable_status=#{shopEnableStatus},</if>
+			<if test="shopAdvice !=null">shop_advice=#{shopAdvice},</if>
+			<if test="shoparea !=null">shop_area_id=#{shoparea.areaId},</if>
+			<if test="shopCategory !=null">shop_category_id=#{shopCategory.shopCategoryId}</if>
+		</set>
+		where shop_id=#{shopId}
+	</update>
+</mapper>

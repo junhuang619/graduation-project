@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jh.xysp.dao.LocalAuthDao">
+
+	<resultMap id="localAuthResultMap" type="LocalAuth">
+		<id column="local_auth_id" property="localAuthId" />
+		<result column="local_username" property="localUserName" />
+		<result column="local_password" property="localPassWord" />
+		<result column="local_create_time" property="localCreateTime" />
+		<result column="local_last_edit_time"
+			property="localLastEditTime" />
+		<association property="personInfo" column="local_user_id"
+			javaType="com.jh.xysp.entity.PersonInfo">
+			<id column="user_id" property="userId" />
+			<result column="user_name" property="userName" />
+			<result column="user_profile_img" property="userProfileImg" />
+			<result column="user_gender" property="userGender" />
+			<result column="user_email" property="userEmail" />
+			<result column="user_type" property="userType" />
+			<result column="user_create_time" property="userCreateTime" />
+			<result column="user_last_edit_time"
+				property="userLastEditTime" />
+			<result column="user_enable_status"
+				property="userEnbaleStatus" />
+		</association>
+	</resultMap>
+
+	<select id="queryLocalByUserNameAndPwd"
+		parameterType="java.lang.String" resultMap="localAuthResultMap">
+		SELECT
+		l.local_auth_id,
+		l.local_user_id,
+		l.local_username,
+		l.local_password,
+		l.local_create_time,
+		l.local_last_edit_time,
+		p.user_id,
+		p.user_name,
+		p.user_gender,
+		p.user_email,
+		p.user_proile_img,
+		p.user_type,
+		p.user_create_time,
+		p.user_last_edit_time,
+		p.user_enable_status
+		FROM
+		jh_local_auth l
+		LEFT JOIN
+		jh_person_info p
+		ON l.local_user_id = p.user_id
+		WHERE
+		l.local_username = #{username}
+		AND
+		l.local_password = #{password}
+	</select>
+	<select id="queryLocalByUserId" parameterType="java.lang.Long" resultMap="localAuthResultMap">
+		SELECT
+		l.local_auth_id,
+		l.local_user_id,
+		l.local_username,
+		l.local_password,
+		l.local_create_time,
+		l.local_last_edit_time,
+		p.user_id,
+		p.user_name,
+		p.user_gender,
+		p.user_email,
+		p.user_proile_img,
+		p.user_type,
+		p.user_create_time,
+		p.user_last_edit_time,
+		p.user_enable_status
+		FROM
+		jh_local_auth l
+		LEFT JOIN
+		jh_person_info p
+		ON l.local_user_id = p.user_id
+		WHERE
+		l.local_user_id = #{userId}
+	</select>
+	<insert id="insertLocalAuth"
+		parameterType="com.jh.xysp.entity.LocalAuth" useGeneratedKeys="true"
+		keyProperty="localAuthId" keyColumn="local_auth_id">
+		insert into
+		jh_local_auth(local_username,local_password,local_user_id,local_create_time,local_last_edit_time)
+		values(#{localUserName},#{localPassWord},#{personInfo.userId},#{localCreateTime},#{localLastEditTime})
+	</insert>
+	<update id="updateLocalAuth">
+		update jh_local_auth
+		<set>
+			<if test="newPassword!=null">local_password=#{newPassword},</if>
+			<if test="lastEditTime!=null">local_last_edit_time=#{lastEditTime}</if>
+		</set>
+		where local_user_id=#{userId}
+		and local_username=#{username}
+		and local_password=#{password}
+	</update>
+</mapper>

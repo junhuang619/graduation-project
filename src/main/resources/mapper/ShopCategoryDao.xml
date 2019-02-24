@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.jh.xysp.dao.ShopCategoryDao">
+	<select id="queryShopCategory"
+		resultType="com.jh.xysp.entity.ShopCategory">
+		SELECT
+		shop_category_id ,
+		shop_category_name,
+		shop_category_desc,
+		shop_category_img,
+		shop_category_priority,
+		shop_category_create_time,
+		shop_category_last_edit_time,
+		shop_category_parent_id
+		FROM
+		jh_shop_category
+		<where>
+			<!-- 首页查询一级类别的商铺信息 -->
+			<if test="shopCategoryCondition == null">
+				and shop_category_parent_id is null
+			</if>
+			<if test="shopCategoryCondition != null">
+				and shop_category_parent_id is not null
+			</if>
+			<!-- 如果传递了父类的id,则查询对应父类下的目录 -->
+			<if test="shopCategoryCondition != null and shopCategoryCondition.shopCategoryParentId != null">
+				and shop_category_parent_id =
+				#{shopCategoryCondition.shopCategoryParentId.shopCategoryId}
+			</if>
+		</where>
+		ORDER BY shop_category_priority
+		DESC
+	</select>
+</mapper>
